@@ -1,0 +1,204 @@
+---
+layout: default
+title: "Gustavo Fabián Delgado Torres — CV & Repos"
+---
+
+<div class="container">
+  <header class="topbar">
+    <div>
+      <h1 class="title"> Gustavo Fabián Delgado Torres </h1>
+      <div class="subtitle">Estudiante de Desarrollo de Aplicaciones Multiplataforma (1º DAM)</div>
+    </div>
+    <nav style="display:flex;gap:10px">
+      <a class="btn" href="https://www.linkedin.com" target="_blank">LinkedIn</a>
+      <a class="btn" href="https://github.com/TUUSUARIO" target="_blank">GitHub</a>
+      <a class="btn" href="mailto:tuemail@ejemplo.com">Email</a>
+    </nav>
+  </header>
+
+  <section class="section">
+    <h2>Sobre mí</h2>
+    <div class="grid2">
+      <div class="profile">
+        <img src="assets/img/perfil.jpg" alt="Foto de perfil">
+        <div class="bio">
+          <p class="muted" style="margin:0">
+            Actualmente estoy aprendiendo Java como lenguaje de programación principal. Tengos conociminetos en bases de datos, mayormente PostgreSQL.
+            También tengo conociminetos en HTML y CSS. Actualmente, estoy aprendiendo a usar XML, XSD y Bash. 
+          </p>
+          <div class="pillrow">
+            <span class="pill">Java</span>
+            <span class="pill">SQL</span>
+            <span class="pill">HTML/CSS</span>
+            <span class="pill">Git</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="margin:0 0 10px">Experiencia / Proyectos de clase</h3>
+        <ul class="muted" style="margin:0;padding-left:18px">
+          <li></li> <!--Proyectos-->
+          <li></li> <!--Proyectos-->
+        </ul>
+
+        <h3 style="margin:16px 0 10px">Objetivo</h3>
+        <p class="muted" style="margin:0">
+          Estoy en busca de prácticas con la finalidad de mejorar en Java, y mis destrezas en general en cuanto a la informática.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Proyectos destacados (topic: <code>showcase</code>)</h2>
+    <div id="featured" class="cards"></div>
+    <p class="muted" style="margin:10px 0 0">
+      Para que un repo salga aquí, añade el topic <b>showcase</b> en GitHub.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>Mis repositorios</h2>
+    <div class="toolbar">
+      <input id="q" class="input" placeholder="Buscar repositorios..." />
+      <select id="sort" class="select">
+        <option value="updated">Ordenar: actividad reciente</option>
+        <option value="stars">Ordenar: estrellas</option>
+        <option value="name">Ordenar: nombre</option>
+      </select>
+      <button class="btn active" data-topic="all">Todos</button>
+      <button class="btn" data-topic="showcase">showcase</button>
+      <button class="btn" data-topic="web">web</button>
+      <button class="btn" data-topic="backend">backend</button>
+    </div>
+
+    <div style="height:12px"></div>
+    <div id="repos" class="cards"></div>
+  </section>
+</div>
+
+<script>
+  const GITHUB_USERNAME = "GustavoFabianDT"; // <- CAMBIA ESTO
+  const FEATURED_TOPIC = "showcase";
+  let allRepos = [];
+  let activeTopic = "all";
+
+  function formatDate(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString("es-ES", {year:"numeric", month:"short", day:"2-digit"});
+  }
+  function cardBorderByIndex(i){
+    return ["border-blue","border-violet","border-emerald"][i % 3];
+  }
+
+  async function fetchRepos(){
+    const url = `https://api.github.com/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`;
+    const res = await fetch(url, { headers: { "Accept":"application/vnd.github+json" }});
+    if(!res.ok) throw new Error("No se pudo leer la API de GitHub. Revisa tu usuario.");
+    const repos = await res.json();
+    return repos.map(r => ({
+      name: r.name,
+      html_url: r.html_url,
+      description: r.description || "",
+      language: r.language || "—",
+      stargazers_count: r.stargazers_count || 0,
+      updated_at: r.updated_at,
+      topics: r.topics || []
+    }));
+  }
+
+  function renderFeatured(repos){
+    const featured = repos.filter(r => r.topics.includes(FEATURED_TOPIC)).slice(0, 6);
+    const el = document.getElementById("featured");
+    el.innerHTML = featured.length ? "" : `<div class="muted">Aún no tienes repos con topic <b>${FEATURED_TOPIC}</b>.</div>`;
+
+    featured.forEach((r, i) => {
+      const topics = r.topics.slice(0, 4).map(t => `<span class="pill">${t}</span>`).join("");
+      el.insertAdjacentHTML("beforeend", `
+        <article class="card ${cardBorderByIndex(i)}">
+          <h3>${r.name}</h3>
+          <div class="muted">${r.description || "Sin descripción (añádela en GitHub 😉)"}</div>
+          <div class="pillrow">
+            <span class="pill featured">Featured</span>
+            ${topics}
+          </div>
+          <div class="repoMeta">
+            <span>⭐ ${r.stargazers_count}</span>
+            <span>🧩 ${r.language}</span>
+            <span>🕒 ${formatDate(r.updated_at)}</span>
+          </div>
+          <a class="btn" href="${r.html_url}" target="_blank" rel="noreferrer">Ver repo</a>
+        </article>
+      `);
+    });
+  }
+
+  function applyFilters(repos){
+    const q = (document.getElementById("q").value || "").toLowerCase();
+    const sort = document.getElementById("sort").value;
+
+    let out = repos.filter(r => {
+      const matchesText = r.name.toLowerCase().includes(q) || (r.description||"").toLowerCase().includes(q);
+      const matchesTopic = activeTopic === "all" ? true : r.topics.includes(activeTopic);
+      return matchesText && matchesTopic;
+    });
+
+    if (sort === "updated") out.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+    if (sort === "stars") out.sort((a,b) => (b.stargazers_count||0) - (a.stargazers_count||0));
+    if (sort === "name") out.sort((a,b) => a.name.localeCompare(b.name));
+    return out;
+  }
+
+  function renderRepos(repos){
+    const el = document.getElementById("repos");
+    const list = applyFilters(repos);
+    el.innerHTML = list.length ? "" : `<div class="muted">No hay resultados con esos filtros.</div>`;
+
+    list.forEach((r, i) => {
+      const topics = (r.topics && r.topics.length)
+        ? r.topics.slice(0, 6).map(t => `<span class="pill">${t}</span>`).join("")
+        : `<span class="pill">sin topics</span>`;
+
+      el.insertAdjacentHTML("beforeend", `
+        <article class="card ${cardBorderByIndex(i)}">
+          <h3>${r.name}</h3>
+          <div class="muted">${r.description || "Sin descripción"}</div>
+          <div class="pillrow">${topics}</div>
+          <div class="repoMeta">
+            <span>⭐ ${r.stargazers_count}</span>
+            <span>🧩 ${r.language}</span>
+            <span>🕒 ${formatDate(r.updated_at)}</span>
+          </div>
+          <a class="btn" href="${r.html_url}" target="_blank" rel="noreferrer">Abrir</a>
+        </article>
+      `);
+    });
+  }
+
+  function bindUI(){
+    document.getElementById("q").addEventListener("input", () => renderRepos(allRepos));
+    document.getElementById("sort").addEventListener("change", () => renderRepos(allRepos));
+    document.querySelectorAll(".btn[data-topic]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".btn[data-topic]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeTopic = btn.dataset.topic;
+        renderRepos(allRepos);
+      });
+    });
+  }
+
+  async function main(){
+    bindUI();
+    allRepos = await fetchRepos();
+    renderFeatured(allRepos);
+    renderRepos(allRepos);
+  }
+
+  main().catch(err => {
+    document.getElementById("featured").innerHTML = `<div class="muted">${err.message}</div>`;
+    document.getElementById("repos").innerHTML = `<div class="muted">${err.message}</div>`;
+    console.error(err);
+  });
+</script>
